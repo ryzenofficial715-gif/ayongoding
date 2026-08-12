@@ -1,1 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Hub — Bikin PRD pakai AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:#09090b;color:#fafafa;min-height:100vh}
 
+/* LOADING SCREEN */
+#loadingScreen{position:fixed;inset:0;z-index:999;background:#09090b;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.particle{position:absolute;border-radius:50%;background:rgba(6,182,212,0.25);animation:float linear infinite}
+@keyframes float{0%,100%{transform:translateY(0);opacity:0.2}50%{transform:translateY(-35px);opacity:0.7}}
+#loadingLogo{font-size:2.8rem;font-weight:800;background:linear-gradient(135deg,#06b6d4,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:pulse 2s ease-in-out infinite;margin-bottom:24px}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+#progressWrap{width:280px;height:5px;background:#27272a;border-radius:10px;overflow:hidden}
+#progressBar{height:100%;background:linear-gradient(90deg,#06b6d4,#8b5cf6);border-radius:10px;width:0%;transition:width 0.25s}
+#loadingText{color:#a1a1aa;font-size:0.85rem;margin-top:14px;font-family:'JetBrains Mono',monospace;min-height:20px}
+.flash{position:fixed;inset:0;z-index:1000;background:#fff;animation:flashOut 0.6s forwards}
+@keyframes flashOut{0%{opacity:1}100%{opacity:0}}
+
+/* APP */
+#app{display:none;max-width:800px;margin:0 auto;padding:40px 20px 60px}
+header{text-align:center;margin-bottom:48px}
+header h1{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,#06b6d4,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+header p{color:#a1a1aa;font-size:1.05rem}
+
+/* INPUT */
+.input-card{background:#18181b;border:1px solid #27272a;border-radius:16px;padding:24px;margin-bottom:24px}
+.input-card label{display:block;font-weight:600;margin-bottom:8px;color:#d4d4d8}
+.input-card textarea{width:100%;height:150px;background:#09090b;border:1px solid #27272a;border-radius:10px;padding:14px;color:#fafafa;font-size:0.95rem;resize:none;outline:none;transition:border-color 0.2s;font-family:'Inter',sans-serif}
+.input-card textarea:focus{border-color:#06b6d4}
+.input-card textarea::placeholder{color:#52525b}
+.btn-row{display:flex;gap:10px;margin-top:14px}
+.btn{padding:12px 24px;border-radius:10px;border:none;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.2s}
+.btn-primary{background:linear-gradient(135deg,#06b6d4,#8b5cf6);color:#fff;flex:1}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.btn-secondary{background:#27272a;color:#d4d4d8}
+.btn-secondary:hover{background:#3f3f46}
+
+/* OUTPUT */
+.output-card{background:#18181b;border:1px solid #27272a;border-radius:16px;padding:28px;min-height:300px;display:none}
+.output-card.loading{display:flex;align-items:center;justify-content:center}
+.dots{display:flex;gap:6px}
+.dots span{width:8px;height:8px;border-radius:50%;background:#06b6d4;animation:bounce 0.6s infinite alternate}
+.dots span:nth-child(2){animation-delay:0.2s}
+.dots span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{to{transform:translateY(-8px);opacity:0.4}}
+.output-content{line-height:1.8;font-size:0.95rem}
+.output-content h1{color:#06b6d4;font-size:1.5rem;margin:24px 0 8px;border-bottom:1px solid #27272a;padding-bottom:8px}
+.output-content h2{color:#8b5cf6;font-size:1.2rem;margin:20px 0 6px}
+.output-content h3{color:#a78bfa;font-size:1rem;margin:16px 0 4px}
+.output-content p{margin:8px 0;color:#d4d4d8}
+.output-content ul,.output-content ol{padding-left:24px;margin:8px 0}
+.output-content li{margin:4px 0;color:#d4d4d8}
+.output-content table{width:100%;border-collapse:collapse;margin:12px 0;font-size:0.85rem}
+.output-content th{background:#27272a;padding:10px 12px;text-align:left;font-weight:600;color:#e4e4e7}
+.output-content td{border-bottom:1px solid #27272a;padding:8px 12px;color:#a1a1aa}
+.output-content code{background:#27272a;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:#06b6d4}
+.output-content strong{color:#fafafa}
+.action-bar{display:none;gap:10px;margin-top:16px}
+
+/* FOOTER */
+footer{text-align:center;padding:24px;color:#52525b;font-size:0.85rem}
+footer a{color:#06b6d4;text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loadingScreen">
+  <div id="particlesContainer"></div>
+  <div id="loadingLogo">AI HUB</div>
+  <div id="progressWrap"><div id="progressBar"></div></div>
+  <div id="loadingText"></div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <h1>AI HUB</h1>
+    <p>Tulis ide mentah kamu, AI bakal pecah jadi PRD lengkap — fitur, arsitektur, task breakdown, siap eksekusi.</p>
+  </header>
+
+  <div class="input-card">
+    <label>✍️ Tulis ide kamu</label>
+    <textarea id="ideaInput" placeholder="Contoh: 'Saya mau bikin aplikasi food delivery kayak GoFood tapi khusus makanan sehat, ada fitur meal plan mingguan, integrasi smartwatch buat tracking kalori...'"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnGenerate" disabled>⚡ Generate PRD</button>
+      <button class="btn btn-secondary" id="btnClear">🗑️ Bersihkan</button>
+    </div>
+  </div>
+
+  <div class="output-card" id="outputCard">
+    <div class="dots" id="loadingDots"><span></span><span></span><span></span></div>
+    <div class="output-content" id="outputContent"></div>
+  </div>
+  <div class="action-bar" id="actionBar">
+    <button class="btn btn-primary" onclick="copyPRD()">📋 Copy PRD</button>
+    <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
+  </div>
+
+  <footer>Made with ❤️ · Powered by <a href="#">Mimo AI</a></footer>
+</div>
+
+<script>
+// ==================== LOADING SCREEN ====================
+const particlesContainer = document.getElementById('particlesContainer');
+for(let i=0;i<60;i++){
+  const p = document.createElement('div');
+  p.className='particle';
+  p.style.left=Math.random()*100+'%';
+  p.style.top=Math.random()*100+'%';
+  p.style.width=p.style.height=(Math.random()*3+1)+'px';
+  p.style.animationDuration=(Math.random()*3+2)+'s';
+  p.style.animationDelay=Math.random()*2+'s';
+  particlesContainer.appendChild(p);
+}
+
+const fullLoadingText = 'Menghubungkan ke AI engine...';
+const loadingText = document.getElementById('loadingText');
+let charIdx = 0;
+const typing = setInterval(()=>{
+  if(charIdx <= fullLoadingText.length){ loadingText.textContent = fullLoadingText.slice(0,charIdx) + '|'; charIdx++; }
+  else clearInterval(typing);
+}, 65);
+
+let progress = 0;
+const progressBar = document.getElementById('progressBar');
+const progressInterval = setInterval(()=>{
+  progress = Math.min(progress + Math.floor(Math.random()*10+5), 100);
+  progressBar.style.width = progress+'%';
+  if(progress >= 100){
+    clearInterval(progressInterval);
+    const flash = document.createElement('div');
+    flash.className='flash';
+    document.body.appendChild(flash);
+    setTimeout(()=>{
+      document.getElementById('loadingScreen').style.display='none';
+      document.getElementById('app').style.display='block';
+      flash.remove();
+    }, 550);
+  }
+}, 170);
+
+// ==================== APP LOGIC ====================
+const ideaInput = document.getElementById('ideaInput');
+const btnGenerate = document.getElementById('btnGenerate');
+const btnClear = document.getElementById('btnClear');
+const outputCard = document.getElementById('outputCard');
+const outputContent = document.getElementById('outputContent');
+const loadingDots = document.getElementById('loadingDots');
+const actionBar = document.getElementById('actionBar');
+let fullPRD = '';
+
+ideaInput.addEventListener('input', ()=>{
+  btnGenerate.disabled = !ideaInput.value.trim();
+});
+
+btnClear.addEventListener('click', ()=>{
+  ideaInput.value = '';
+  btnGenerate.disabled = true;
+  outputCard.style.display = 'none';
+  actionBar.style.display = 'none';
+  fullPRD = '';
+});
+
+btnGenerate.addEventListener('click', generatePRD);
+ideaInput.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && !e.shiftKey && ideaInput.value.trim()){
+    e.preventDefault();
+    generatePRD();
+  }
+});
+
+async function generatePRD(){
+  const idea = ideaInput.value.trim();
+  if(!idea) return;
+
+  btnGenerate.disabled = true;
+  btnGenerate.textContent = '⏳ Generating...';
+  outputCard.style.display = 'block';
+  outputCard.classList.add('loading');
+  loadingDots.style.display = 'flex';
+  outputContent.innerHTML = '';
+  actionBar.style.display = 'none';
+  fullPRD = '';
+
+  try{
+    const res = await fetch('/api/generate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ idea })
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    outputCard.classList.remove('loading');
+    loadingDots.style.display = 'none';
+
+    while(true){
+      const { done, value } = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for(const line of lines){
+        if(line.startsWith('data: ')){
+          const d = line.slice(6).trim();
+          if(d === '[DONE]'){
+            actionBar.style.display = 'flex';
+            continue;
+          }
+          try{
+            const parsed = JSON.parse(d);
+            if(parsed.text){ fullPRD += parsed.text; outputContent.innerHTML = renderMarkdown(fullPRD); }
+            if(parsed.error){ outputContent.innerHTML = `<p style="color:#f87171">❌ ${parsed.error}</p>`; }
+          }catch{}
+        }
+      }
+    }
+  }catch(err){
+    outputContent.innerHTML = `<p style="color:#f87171">❌ Gagal menghubungi server: ${err.message}</p>`;
+    outputCard.classList.remove('loading');
+    loadingDots.style.display = 'none';
+  }
+
+  btnGenerate.disabled = false;
+  btnGenerate.textContent = '⚡ Generate PRD';
+}
+
+function renderMarkdown(md){
+  let html = md;
+  // Heading
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Code inline
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Lists
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
+  // Tables (simple)
+  html = html.replace(/^\|(.+)\|$/gm, (match)=>{
+    const cells = match.split('|').filter(c => c.trim());
+    const isHeader = cells.some(c => /^[-:]+$/.test(c.trim()));
+    if(isHeader) return '';
+    const tag = match.startsWith('|') && !html.includes('<th>') ? 'th' : 'td';
+    return '<tr>'+cells.map(c=>`<${tag}>${c.trim()}</${tag}>`).join('')+'</tr>';
+  });
+  // Wrap tables
+  if(html.includes('<tr>')) html = '<table>'+html+'</table>';
+  // Wrap lists
+  if(html.includes('<li>') && !html.includes('<ul>')) html = html.replace(/(<li>.*?<\/li>)+/g, '<ul>$&</ul>');
+  // Paragraphs
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = '<p>'+html+'</p>';
+  html = html.replace(/<p>\s*<\/p>/g, '');
+  return html;
+}
+
+function copyPRD(){
+  navigator.clipboard.writeText(fullPRD).then(()=>{
+    const btn = document.querySelector('.action-bar .btn-primary');
+    const orig = btn.textContent;
+    btn.textContent = '✅ Tersalin!';
+    setTimeout(()=>{ btn.textContent = orig; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
