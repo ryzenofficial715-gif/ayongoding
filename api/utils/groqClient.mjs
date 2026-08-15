@@ -2,13 +2,6 @@ import axios from 'axios';
 
 const GROQ_API_KEY = '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';
 
-/**
- * Kirim chat ke Groq API
- * @param {string} prompt - Pesan user
- * @param {string} systemPrompt - Instruksi sistem
- * @param {number} maxTokens - Maksimal token output
- * @returns {Promise<string>} - Teks hasil dari AI
- */
 export async function chatWithGroq(prompt, systemPrompt = '', maxTokens = 4096) {
   const messages = [];
   if (systemPrompt) {
@@ -20,7 +13,7 @@ export async function chatWithGroq(prompt, systemPrompt = '', maxTokens = 4096) 
     const res = await axios.post(
       'https://api.groq.com/openai/v1/chat/completions',
       {
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages,
         temperature: 0.7,
         max_tokens: maxTokens,
@@ -32,7 +25,7 @@ export async function chatWithGroq(prompt, systemPrompt = '', maxTokens = 4096) 
           'Authorization': `Bearer ${GROQ_API_KEY}`,
           'Content-Type': 'application/json'
         },
-        timeout: 60000
+        timeout: 90000
       }
     );
 
@@ -42,27 +35,30 @@ export async function chatWithGroq(prompt, systemPrompt = '', maxTokens = 4096) 
     throw new Error('Respons AI kosong');
   } catch (err) {
     console.error('[Groq Error]:', err.message);
+    
     if (err.response?.status === 401) {
       throw new Error('Token Groq invalid. Cek API key di console.groq.com');
     }
     if (err.response?.status === 429) {
       throw new Error('Rate limit Groq tercapai. Tunggu beberapa saat lalu coba lagi.');
     }
+    if (err.response?.status === 503) {
+      throw new Error('Server Groq sedang sibuk. Coba lagi dalam 1 menit.');
+    }
     if (err.code === 'ECONNABORTED') {
-      throw new Error('Timeout. AI butuh waktu lebih lama, coba lagi.');
+      throw new Error('AI timeout. Coba lagi dengan ide yang lebih singkat.');
     }
     throw new Error('Gagal menghubungi Groq API: ' + err.message);
   }
 }
 
-/**
- * Bersihkan JSON dari AI yang mungkin ada markdown/teks ekstra
- */
 export function cleanJSON(text) {
-  // Hapus markdown code blocks
-  let cleaned = text.replace(/```json/gi, '').replace(/```/g, '');
+  let cleaned = text || '';
   
-  // Coba cari JSON object/array pertama
+  // Hapus markdown code blocks
+  cleaned = cleaned.replace(/```json/gi, '').replace(/```/g, '');
+  
+  // Hapus teks sebelum { pertama dan sesudah } terakhir
   const startIndex = cleaned.indexOf('{');
   const endIndex = cleaned.lastIndexOf('}');
   
