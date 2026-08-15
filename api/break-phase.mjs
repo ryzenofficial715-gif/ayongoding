@@ -46,11 +46,10 @@ export default async function handler(req, res) {
     const { idea } = req.body;
 
     if (!idea || idea.trim().length < 10) {
-      return res.status(400).json({ error: 'Ide harus minimal 10 karakter. Jelaskan lebih detail ya.' });
-    }
-
-    if (idea.trim().length > 2000) {
-      return res.status(400).json({ error: 'Ide terlalu panjang. Maksimal 2000 karakter.' });
+      return res.status(200).json({ 
+        success: false, 
+        error: 'Ide harus minimal 10 karakter. Jelaskan lebih detail ya.' 
+      });
     }
 
     const prompt = `Pecah ide project berikut menjadi 5 fase pembangunan:\n\n${idea.trim()}`;
@@ -62,29 +61,36 @@ export default async function handler(req, res) {
     try {
       parsed = JSON.parse(cleaned);
     } catch (parseErr) {
-      console.error('[Parse Error]:', cleaned.substring(0, 200));
-      return res.status(500).json({ 
-        error: 'AI menghasilkan format tidak valid. Coba lagi atau gunakan ide yang lebih spesifik.' 
+      console.error('[Parse Error]:', cleaned.substring(0, 300));
+      return res.status(200).json({ 
+        success: false, 
+        error: 'AI menghasilkan format tidak valid. Coba lagi dengan ide yang lebih spesifik.' 
       });
     }
 
     if (!parsed.phases || !Array.isArray(parsed.phases) || parsed.phases.length === 0) {
-      return res.status(500).json({ error: 'Gagal memecah fase. Coba lagi.' });
+      return res.status(200).json({ 
+        success: false, 
+        error: 'Gagal memecah fase. Coba lagi dengan deskripsi yang lebih detail.' 
+      });
     }
 
-    // Validasi struktur
+    // Validasi struktur minimal
     for (const phase of parsed.phases) {
       if (!phase.name || !phase.subfeatures || !Array.isArray(phase.subfeatures)) {
-        return res.status(500).json({ error: 'Struktur fase tidak lengkap. Coba lagi.' });
-      }
-      if (phase.subfeatures.length < 3) {
-        return res.status(500).json({ error: 'Sub-fitur kurang lengkap. Coba lagi.' });
+        return res.status(200).json({ 
+          success: false, 
+          error: 'Struktur fase tidak lengkap. Coba lagi.' 
+        });
       }
     }
 
     res.status(200).json({ success: true, phases: parsed.phases });
   } catch (err) {
     console.error('[break-phases Error]:', err.message);
-    res.status(500).json({ error: err.message || 'Gagal memproses ide. Coba lagi.' });
+    res.status(200).json({ 
+      success: false, 
+      error: err.message || 'Gagal memproses ide. Coba lagi.' 
+    });
   }
 }
