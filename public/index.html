@@ -3,71 +3,86 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Hub — Bikin PRD pakai AI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>AI Hub — PRD Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+:root{
+  --bg:#09090b;--card:#18181b;--border:#27272a;--primary:#06b6d4;
+  --accent:#8b5cf6;--text:#fafafa;--muted:#a1a1aa;--success:#10b981;--error:#ef4444;
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',system-ui,sans-serif;background:#09090b;color:#fafafa;min-height:100vh}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent}
 
 /* LOADING SCREEN */
-#loadingScreen{position:fixed;inset:0;z-index:999;background:#09090b;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
-.particle{position:absolute;border-radius:50%;background:rgba(6,182,212,0.25);animation:float linear infinite}
-@keyframes float{0%,100%{transform:translateY(0);opacity:0.2}50%{transform:translateY(-35px);opacity:0.7}}
-#loadingLogo{font-size:2.8rem;font-weight:800;background:linear-gradient(135deg,#06b6d4,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:pulse 2s ease-in-out infinite;margin-bottom:24px}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
-#progressWrap{width:280px;height:5px;background:#27272a;border-radius:10px;overflow:hidden}
-#progressBar{height:100%;background:linear-gradient(90deg,#06b6d4,#8b5cf6);border-radius:10px;width:0%;transition:width 0.25s}
-#loadingText{color:#a1a1aa;font-size:0.85rem;margin-top:14px;font-family:'JetBrains Mono',monospace;min-height:20px}
-.flash{position:fixed;inset:0;z-index:1000;background:#fff;animation:flashOut 0.6s forwards}
+#loadingScreen{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.particle{position:absolute;border-radius:50%;background:rgba(6,182,212,0.2);animation:float linear infinite;pointer-events:none}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0.15}50%{transform:translateY(-40px) scale(1.3);opacity:0.6}}
+#loadingLogo{font-size:clamp(2.2rem,6vw,3.2rem);font-weight:800;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:pulse 2s ease-in-out infinite;margin-bottom:28px;letter-spacing:-0.5px}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+#progressWrap{width:min(280px,70vw);height:5px;background:var(--border);border-radius:99px;overflow:hidden}
+#progressBar{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:99px;width:0%;transition:width 0.3s ease}
+#loadingText{color:var(--muted);font-size:0.85rem;margin-top:16px;font-family:'JetBrains Mono',monospace;min-height:22px}
+.flash{position:fixed;inset:0;z-index:1000;background:#fff;animation:flashOut 0.7s ease forwards;pointer-events:none}
 @keyframes flashOut{0%{opacity:1}100%{opacity:0}}
 
 /* APP */
-#app{display:none;max-width:800px;margin:0 auto;padding:40px 20px 60px}
-header{text-align:center;margin-bottom:48px}
-header h1{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,#06b6d4,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
-header p{color:#a1a1aa;font-size:1.05rem}
+#app{display:none;max-width:900px;margin:0 auto;padding:clamp(20px,5vw,48px) 20px 80px}
+header{text-align:center;margin-bottom:36px}
+header h1{font-size:clamp(1.8rem,5vw,2.5rem);font-weight:800;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;letter-spacing:-0.5px}
+header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.6}
 
-/* INPUT */
-.input-card{background:#18181b;border:1px solid #27272a;border-radius:16px;padding:24px;margin-bottom:24px}
-.input-card label{display:block;font-weight:600;margin-bottom:8px;color:#d4d4d8}
-.input-card textarea{width:100%;height:150px;background:#09090b;border:1px solid #27272a;border-radius:10px;padding:14px;color:#fafafa;font-size:0.95rem;resize:none;outline:none;transition:border-color 0.2s;font-family:'Inter',sans-serif}
-.input-card textarea:focus{border-color:#06b6d4}
-.input-card textarea::placeholder{color:#52525b}
-.btn-row{display:flex;gap:10px;margin-top:14px}
-.btn{padding:12px 24px;border-radius:10px;border:none;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.2s}
-.btn-primary{background:linear-gradient(135deg,#06b6d4,#8b5cf6);color:#fff;flex:1}
-.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
-.btn-primary:disabled{opacity:0.4;cursor:not-allowed;transform:none}
-.btn-secondary{background:#27272a;color:#d4d4d8}
-.btn-secondary:hover{background:#3f3f46}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:clamp(16px,4vw,24px);margin-bottom:20px;transition:border-color 0.2s}
+.card:focus-within{border-color:var(--primary)}
+.card label{display:block;font-weight:600;margin-bottom:10px;color:#d4d4d8;font-size:0.95rem}
+.card textarea{width:100%;height:120px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--text);font-size:0.95rem;resize:vertical;outline:none;font-family:inherit;line-height:1.6;transition:border-color 0.2s}
+.card textarea:focus{border-color:var(--primary)}
+.card textarea::placeholder{color:#52525b}
 
-/* OUTPUT */
-.output-card{background:#18181b;border:1px solid #27272a;border-radius:16px;padding:28px;min-height:300px;display:none}
-.output-card.loading{display:flex;align-items:center;justify-content:center}
-.dots{display:flex;gap:6px}
-.dots span{width:8px;height:8px;border-radius:50%;background:#06b6d4;animation:bounce 0.6s infinite alternate}
-.dots span:nth-child(2){animation-delay:0.2s}
-.dots span:nth-child(3){animation-delay:0.4s}
-@keyframes bounce{to{transform:translateY(-8px);opacity:0.4}}
-.output-content{line-height:1.8;font-size:0.95rem}
-.output-content h1{color:#06b6d4;font-size:1.5rem;margin:24px 0 8px;border-bottom:1px solid #27272a;padding-bottom:8px}
-.output-content h2{color:#8b5cf6;font-size:1.2rem;margin:20px 0 6px}
-.output-content h3{color:#a78bfa;font-size:1rem;margin:16px 0 4px}
-.output-content p{margin:8px 0;color:#d4d4d8}
-.output-content ul,.output-content ol{padding-left:24px;margin:8px 0}
-.output-content li{margin:4px 0;color:#d4d4d8}
-.output-content table{width:100%;border-collapse:collapse;margin:12px 0;font-size:0.85rem}
-.output-content th{background:#27272a;padding:10px 12px;text-align:left;font-weight:600;color:#e4e4e7}
-.output-content td{border-bottom:1px solid #27272a;padding:8px 12px;color:#a1a1aa}
-.output-content code{background:#27272a;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:#06b6d4}
-.output-content strong{color:#fafafa}
-.action-bar{display:none;gap:10px;margin-top:16px}
+.btn{display:block;width:100%;padding:14px 20px;border-radius:12px;border:none;font-weight:700;font-size:0.95rem;cursor:pointer;transition:all 0.25s;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;letter-spacing:0.3px}
+.btn:hover:not(:disabled){opacity:0.92;transform:translateY(-2px);box-shadow:0 8px 25px rgba(6,182,212,0.25)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.btn-secondary{background:var(--border);color:#d4d4d8;margin-top:12px;box-shadow:none}
+.btn-secondary:hover:not(:disabled){background:#3f3f46;transform:none;box-shadow:none}
 
-/* FOOTER */
-footer{text-align:center;padding:24px;color:#52525b;font-size:0.85rem}
-footer a{color:#06b6d4;text-decoration:none}
+.phase-container{margin-top:8px;counter-reset:phase}
+.phase-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:clamp(16px,4vw,24px);margin-bottom:18px;animation:fadeIn 0.4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.phase-card .phase-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.phase-card .phase-number{flex-shrink:0;width:32px;height:32px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem}
+.phase-card h3{color:var(--primary);font-size:1.05rem;line-height:32px}
+.phase-card .phase-desc{color:#71717a;font-size:0.85rem;margin-bottom:18px;line-height:1.5}
+
+.subfeature-block{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.subfeature-block h4{color:#a78bfa;font-size:0.9rem;margin-bottom:12px;font-weight:600}
+.field-group{margin-bottom:12px}
+.field-group:last-child{margin-bottom:0}
+.field-group label{display:block;font-size:0.8rem;color:var(--muted);margin-bottom:5px;font-weight:500}
+.field-group input{width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;outline:none;transition:border-color 0.2s;font-family:inherit}
+.field-group input:focus{border-color:var(--primary)}
+.field-group input::placeholder{color:#52525b}
+
+.loading-dots{display:none;justify-content:center;gap:8px;padding:24px}
+.loading-dots span{width:10px;height:10px;border-radius:50%;background:var(--primary);animation:bounce 0.6s infinite alternate}
+.loading-dots span:nth-child(2){animation-delay:0.15s;background:var(--accent)}
+.loading-dots span:nth-child(3){animation-delay:0.3s;background:#ec4899}
+@keyframes bounce{to{transform:translateY(-12px);opacity:0.3}}
+
+.error-text{color:var(--error);text-align:center;display:none;padding:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;margin-bottom:16px;font-size:0.9rem;line-height:1.5}
+
+.result-box{display:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:clamp(16px,4vw,24px);margin-top:24px;animation:fadeIn 0.5s ease}
+.result-box h3{color:var(--success);margin-bottom:14px;font-size:1.1rem;display:flex;align-items:center;gap:8px}
+.result-box pre{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;white-space:pre-wrap;word-wrap:break-word;font-family:'JetBrains Mono',monospace;font-size:0.82rem;line-height:1.7;max-height:520px;overflow-y:auto;color:#d4d4d8}
+.result-box pre::-webkit-scrollbar{width:6px}
+.result-box pre::-webkit-scrollbar-track{background:transparent}
+.result-box pre::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+
+/* MOBILE OPTIMIZATION */
+@media(max-width:640px){
+  .field-group input{font-size:16px;padding:12px}
+  .btn{padding:16px;font-size:1rem}
+  .result-box pre{font-size:0.75rem;max-height:400px}
+}
 </style>
 </head>
 <body>
@@ -83,202 +98,321 @@ footer a{color:#06b6d4;text-decoration:none}
 <!-- APP -->
 <div id="app">
   <header>
-    <h1>AI HUB</h1>
-    <p>Tulis ide mentah kamu, AI bakal pecah jadi PRD lengkap — fitur, arsitektur, task breakdown, siap eksekusi.</p>
+    <h1>AI HUB — PRD Generator</h1>
+    <p>Tulis ide kasar kamu, AI pecah jadi 5 fase terstruktur. Isi detailnya, dapatkan prompt professional yang siap dipakai di AI coding manapun.</p>
   </header>
 
-  <div class="input-card">
-    <label>✍️ Tulis ide kamu</label>
-    <textarea id="ideaInput" placeholder="Contoh: 'Saya mau bikin aplikasi food delivery kayak GoFood tapi khusus makanan sehat, ada fitur meal plan mingguan, integrasi smartwatch buat tracking kalori...'"></textarea>
-    <div class="btn-row">
-      <button class="btn btn-primary" id="btnGenerate" disabled>⚡ Generate PRD</button>
-      <button class="btn btn-secondary" id="btnClear">🗑️ Bersihkan</button>
-    </div>
+  <div class="card">
+    <label>💡 Tulis ide project kamu</label>
+    <textarea id="ideaInput" placeholder="Contoh: Saya mau bikin web AI chat kayak ChatGPT tapi bisa pilih banyak model gratis, ada dark mode, bisa upload file, sama ada fitur rekomendasi AI berdasarkan kebutuhan user..."></textarea>
+    <button class="btn" id="btnBreakdown" disabled>🔍 Pecah Jadi 5 Fase</button>
   </div>
 
-  <div class="output-card" id="outputCard">
-    <div class="dots" id="loadingDots"><span></span><span></span><span></span></div>
-    <div class="output-content" id="outputContent"></div>
-  </div>
-  <div class="action-bar" id="actionBar">
-    <button class="btn btn-primary" onclick="copyPRD()">📋 Copy PRD</button>
-    <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
-  </div>
+  <div class="loading-dots" id="loadingDots"><span></span><span></span><span></span></div>
+  <p class="error-text" id="errorText"></p>
 
-  <footer>Made with ❤️ · Powered by <a href="#">Mimo AI</a></footer>
+  <div id="phaseContainer" class="phase-container"></div>
+
+  <button class="btn" id="btnGenerate" style="display:none;margin-top:24px">⚡ Generate Prompt Professional</button>
+
+  <div class="result-box" id="resultBox">
+    <h3>✅ Prompt Professional Siap Dipakai</h3>
+    <pre id="promptOutput"></pre>
+    <button class="btn btn-secondary" onclick="copyPrompt()">📋 Copy Prompt</button>
+  </div>
 </div>
 
 <script>
-// ==================== LOADING SCREEN ====================
-const particlesContainer = document.getElementById('particlesContainer');
-for(let i=0;i<60;i++){
-  const p = document.createElement('div');
-  p.className='particle';
-  p.style.left=Math.random()*100+'%';
-  p.style.top=Math.random()*100+'%';
-  p.style.width=p.style.height=(Math.random()*3+1)+'px';
-  p.style.animationDuration=(Math.random()*3+2)+'s';
-  p.style.animationDelay=Math.random()*2+'s';
-  particlesContainer.appendChild(p);
-}
+(function(){
+  'use strict';
 
-const fullLoadingText = 'Menghubungkan ke AI engine...';
-const loadingText = document.getElementById('loadingText');
-let charIdx = 0;
-const typing = setInterval(()=>{
-  if(charIdx <= fullLoadingText.length){ loadingText.textContent = fullLoadingText.slice(0,charIdx) + '|'; charIdx++; }
-  else clearInterval(typing);
-}, 65);
-
-let progress = 0;
-const progressBar = document.getElementById('progressBar');
-const progressInterval = setInterval(()=>{
-  progress = Math.min(progress + Math.floor(Math.random()*10+5), 100);
-  progressBar.style.width = progress+'%';
-  if(progress >= 100){
-    clearInterval(progressInterval);
-    const flash = document.createElement('div');
-    flash.className='flash';
-    document.body.appendChild(flash);
-    setTimeout(()=>{
-      document.getElementById('loadingScreen').style.display='none';
-      document.getElementById('app').style.display='block';
-      flash.remove();
-    }, 550);
+  // ========== LOADING SCREEN ==========
+  const particlesContainer = document.getElementById('particlesContainer');
+  for(let i = 0; i < 60; i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.width = p.style.height = (Math.random() * 3 + 1) + 'px';
+    p.style.animationDuration = (Math.random() * 3 + 2) + 's';
+    p.style.animationDelay = Math.random() * 2 + 's';
+    particlesContainer.appendChild(p);
   }
-}, 170);
 
-// ==================== APP LOGIC ====================
-const ideaInput = document.getElementById('ideaInput');
-const btnGenerate = document.getElementById('btnGenerate');
-const btnClear = document.getElementById('btnClear');
-const outputCard = document.getElementById('outputCard');
-const outputContent = document.getElementById('outputContent');
-const loadingDots = document.getElementById('loadingDots');
-const actionBar = document.getElementById('actionBar');
-let fullPRD = '';
+  const loadingText = document.getElementById('loadingText');
+  const fullLoadingText = 'Menghubungkan ke AI engine...';
+  let charIdx = 0;
+  const typingTimer = setInterval(() => {
+    if(charIdx <= fullLoadingText.length){
+      loadingText.textContent = fullLoadingText.slice(0, charIdx) + '|';
+      charIdx++;
+    } else {
+      clearInterval(typingTimer);
+      loadingText.textContent = fullLoadingText;
+    }
+  }, 60);
 
-ideaInput.addEventListener('input', ()=>{
-  btnGenerate.disabled = !ideaInput.value.trim();
-});
+  let progress = 0;
+  const progressBar = document.getElementById('progressBar');
+  const progressTimer = setInterval(() => {
+    progress = Math.min(progress + Math.floor(Math.random() * 9 + 5), 100);
+    progressBar.style.width = progress + '%';
+    if(progress >= 100){
+      clearInterval(progressTimer);
+      const flash = document.createElement('div');
+      flash.className = 'flash';
+      document.body.appendChild(flash);
+      setTimeout(() => {
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        flash.remove();
+      }, 600);
+    }
+  }, 160);
 
-btnClear.addEventListener('click', ()=>{
-  ideaInput.value = '';
-  btnGenerate.disabled = true;
-  outputCard.style.display = 'none';
-  actionBar.style.display = 'none';
-  fullPRD = '';
-});
+  // ========== APP STATE ==========
+  const ideaInput = document.getElementById('ideaInput');
+  const btnBreakdown = document.getElementById('btnBreakdown');
+  const btnGenerate = document.getElementById('btnGenerate');
+  const loadingDots = document.getElementById('loadingDots');
+  const errorText = document.getElementById('errorText');
+  const phaseContainer = document.getElementById('phaseContainer');
+  const resultBox = document.getElementById('resultBox');
+  const promptOutput = document.getElementById('promptOutput');
 
-btnGenerate.addEventListener('click', generatePRD);
-ideaInput.addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter' && !e.shiftKey && ideaInput.value.trim()){
-    e.preventDefault();
-    generatePRD();
+  let phasesData = [];
+  let isGenerating = false;
+
+  // ========== EVENT LISTENERS ==========
+  ideaInput.addEventListener('input', () => {
+    btnBreakdown.disabled = ideaInput.value.trim().length < 10;
+  });
+
+  ideaInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && e.ctrlKey && !btnBreakdown.disabled){
+      e.preventDefault();
+      handleBreakdown();
+    }
+  });
+
+  btnBreakdown.addEventListener('click', handleBreakdown);
+  btnGenerate.addEventListener('click', handleGenerate);
+
+  // ========== BREAKDOWN HANDLER ==========
+  async function handleBreakdown(){
+    if(isGenerating) return;
+    const idea = ideaInput.value.trim();
+    if(idea.length < 10){
+      showError('Ide harus minimal 10 karakter ya.');
+      return;
+    }
+
+    isGenerating = true;
+    btnBreakdown.disabled = true;
+    btnBreakdown.textContent = '⏳ Menganalisis ide...';
+    showLoading(true);
+    hideError();
+    phaseContainer.innerHTML = '';
+    btnGenerate.style.display = 'none';
+    resultBox.style.display = 'none';
+
+    try{
+      const res = await fetch('/api/break-phases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea })
+      });
+
+      const data = await res.json();
+
+      if(!res.ok){
+        throw new Error(data.error || 'Gagal memecah fase. Coba lagi.');
+      }
+
+      if(!data.phases || data.phases.length === 0){
+        throw new Error('AI tidak menghasilkan fase. Coba dengan ide yang lebih spesifik.');
+      }
+
+      phasesData = data.phases;
+      renderPhases();
+      btnGenerate.style.display = 'block';
+      btnGenerate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }catch(err){
+      showError('❌ ' + err.message);
+    }finally{
+      isGenerating = false;
+      btnBreakdown.disabled = false;
+      btnBreakdown.textContent = '🔍 Pecah Jadi 5 Fase';
+      showLoading(false);
+    }
   }
-});
 
-async function generatePRD(){
-  const idea = ideaInput.value.trim();
-  if(!idea) return;
+  // ========== RENDER PHASES ==========
+  function renderPhases(){
+    phaseContainer.innerHTML = '';
 
-  btnGenerate.disabled = true;
-  btnGenerate.textContent = '⏳ Generating...';
-  outputCard.style.display = 'block';
-  outputCard.classList.add('loading');
-  loadingDots.style.display = 'flex';
-  outputContent.innerHTML = '';
-  actionBar.style.display = 'none';
-  fullPRD = '';
+    phasesData.forEach((phase, pi) => {
+      const phaseDiv = document.createElement('div');
+      phaseDiv.className = 'phase-card';
 
-  try{
-    const res = await fetch('/api/generate',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ idea })
+      let subfeaturesHTML = '';
+      phase.subfeatures.forEach((sub, si) => {
+        subfeaturesHTML += `
+          <div class="subfeature-block">
+            <h4>${si + 1}. ${sub.name}</h4>
+            ${sub.fields.map((field, fi) => `
+              <div class="field-group">
+                <label>${field}</label>
+                <input type="text" 
+                       placeholder="Isi ${field.toLowerCase()}..." 
+                       data-phase="${pi}" 
+                       data-sub="${si}" 
+                       data-field="${fi}"
+                       autocomplete="off">
+              </div>
+            `).join('')}
+          </div>
+        `;
+      });
+
+      phaseDiv.innerHTML = `
+        <div class="phase-header">
+          <div class="phase-number">${pi + 1}</div>
+          <h3>${phase.name}</h3>
+        </div>
+        <p class="phase-desc">${phase.description || ''}</p>
+        ${subfeaturesHTML}
+      `;
+
+      phaseContainer.appendChild(phaseDiv);
+    });
+  }
+
+  // ========== GENERATE HANDLER ==========
+  async function handleGenerate(){
+    if(isGenerating) return;
+
+    // Kumpulkan semua input
+    const inputs = document.querySelectorAll('#phaseContainer input');
+    const projectData = {
+      idea: ideaInput.value.trim(),
+      phases: []
+    };
+
+    let isEmpty = false;
+
+    inputs.forEach(input => {
+      const pi = parseInt(input.dataset.phase);
+      const si = parseInt(input.dataset.sub);
+      const fi = parseInt(input.dataset.field);
+      const value = input.value.trim();
+
+      if(!value) isEmpty = true;
+
+      if(!projectData.phases[pi]){
+        projectData.phases[pi] = { name: phasesData[pi].name, subfeatures: [] };
+      }
+      if(!projectData.phases[pi].subfeatures[si]){
+        projectData.phases[pi].subfeatures[si] = { name: phasesData[pi].subfeatures[si].name, fields: [] };
+      }
+      projectData.phases[pi].subfeatures[si].fields[fi] = {
+        name: phasesData[pi].subfeatures[si].fields[fi],
+        value: value
+      };
     });
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    isGenerating = true;
+    btnGenerate.disabled = true;
+    btnGenerate.textContent = '⏳ Generating prompt professional...';
+    showLoading(true);
+    hideError();
+    resultBox.style.display = 'none';
 
-    outputCard.classList.remove('loading');
-    loadingDots.style.display = 'none';
+    try{
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectData })
+      });
 
-    while(true){
-      const { done, value } = await reader.read();
-      if(done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
+      const data = await res.json();
 
-      for(const line of lines){
-        if(line.startsWith('data: ')){
-          const d = line.slice(6).trim();
-          if(d === '[DONE]'){
-            actionBar.style.display = 'flex';
-            continue;
-          }
-          try{
-            const parsed = JSON.parse(d);
-            if(parsed.text){ fullPRD += parsed.text; outputContent.innerHTML = renderMarkdown(fullPRD); }
-            if(parsed.error){ outputContent.innerHTML = `<p style="color:#f87171">❌ ${parsed.error}</p>`; }
-          }catch{}
-        }
+      if(!res.ok){
+        throw new Error(data.error || 'Gagal generate prompt.');
       }
+
+      promptOutput.textContent = data.prompt;
+      resultBox.style.display = 'block';
+      resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }catch(err){
+      showError('❌ ' + err.message);
+    }finally{
+      isGenerating = false;
+      btnGenerate.disabled = false;
+      btnGenerate.textContent = '⚡ Generate Prompt Professional';
+      showLoading(false);
     }
-  }catch(err){
-    outputContent.innerHTML = `<p style="color:#f87171">❌ Gagal menghubungi server: ${err.message}</p>`;
-    outputCard.classList.remove('loading');
-    loadingDots.style.display = 'none';
   }
 
-  btnGenerate.disabled = false;
-  btnGenerate.textContent = '⚡ Generate PRD';
-}
+  // ========== UTILITY ==========
+  function showLoading(show){
+    loadingDots.style.display = show ? 'flex' : 'none';
+  }
 
-function renderMarkdown(md){
-  let html = md;
-  // Heading
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-  // Bold
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // Italic
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  // Code inline
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-  // Lists
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
-  // Tables (simple)
-  html = html.replace(/^\|(.+)\|$/gm, (match)=>{
-    const cells = match.split('|').filter(c => c.trim());
-    const isHeader = cells.some(c => /^[-:]+$/.test(c.trim()));
-    if(isHeader) return '';
-    const tag = match.startsWith('|') && !html.includes('<th>') ? 'th' : 'td';
-    return '<tr>'+cells.map(c=>`<${tag}>${c.trim()}</${tag}>`).join('')+'</tr>';
-  });
-  // Wrap tables
-  if(html.includes('<tr>')) html = '<table>'+html+'</table>';
-  // Wrap lists
-  if(html.includes('<li>') && !html.includes('<ul>')) html = html.replace(/(<li>.*?<\/li>)+/g, '<ul>$&</ul>');
-  // Paragraphs
-  html = html.replace(/\n\n/g, '</p><p>');
-  html = '<p>'+html+'</p>';
-  html = html.replace(/<p>\s*<\/p>/g, '');
-  return html;
-}
+  function showError(msg){
+    errorText.textContent = msg;
+    errorText.style.display = 'block';
+    errorText.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 
-function copyPRD(){
-  navigator.clipboard.writeText(fullPRD).then(()=>{
-    const btn = document.querySelector('.action-bar .btn-primary');
-    const orig = btn.textContent;
+  function hideError(){
+    errorText.style.display = 'none';
+    errorText.textContent = '';
+  }
+
+  window.copyPrompt = function(){
+    const text = promptOutput.textContent;
+    if(!text) return;
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(() => {
+        showCopySuccess();
+      }).catch(() => {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  };
+
+  function fallbackCopy(text){
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try{
+      document.execCommand('copy');
+      showCopySuccess();
+    }catch(err){
+      alert('Gagal copy. Silakan copy manual.');
+    }
+    document.body.removeChild(textarea);
+  }
+
+  function showCopySuccess(){
+    const btn = document.querySelector('.btn-secondary');
+    const original = btn.textContent;
     btn.textContent = '✅ Tersalin!';
-    setTimeout(()=>{ btn.textContent = orig; }, 2000);
-  });
-}
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.disabled = false;
+    }, 1800);
+  }
+
+})();
 </script>
 </body>
 </html>
