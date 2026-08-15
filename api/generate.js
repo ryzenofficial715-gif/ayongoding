@@ -1,4 +1,4 @@
-import { chatWithGroq } from './utils/groqClient.mjs';
+import { chatWithGroq } from './utils/groqClient.js';
 
 const SYSTEM_PROMPT = `Kamu adalah AI Prompt Engineer senior yang ahli membuat prompt coding professional.
 
