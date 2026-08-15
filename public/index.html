@@ -13,7 +13,6 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent}
 
-/* LOADING SCREEN */
 #loadingScreen{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
 .particle{position:absolute;border-radius:50%;background:rgba(6,182,212,0.2);animation:float linear infinite;pointer-events:none}
 @keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0.15}50%{transform:translateY(-40px) scale(1.3);opacity:0.6}}
@@ -25,7 +24,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .flash{position:fixed;inset:0;z-index:1000;background:#fff;animation:flashOut 0.7s ease forwards;pointer-events:none}
 @keyframes flashOut{0%{opacity:1}100%{opacity:0}}
 
-/* APP */
 #app{display:none;max-width:900px;margin:0 auto;padding:clamp(20px,5vw,48px) 20px 80px}
 header{text-align:center;margin-bottom:36px}
 header h1{font-size:clamp(1.8rem,5vw,2.5rem);font-weight:800;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;letter-spacing:-0.5px}
@@ -45,7 +43,7 @@ header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.
 .btn-secondary{background:var(--border);color:#d4d4d8;margin-top:12px;box-shadow:none}
 .btn-secondary:hover:not(:disabled){background:#3f3f46;transform:none;box-shadow:none}
 
-.phase-container{margin-top:8px;counter-reset:phase}
+.phase-container{margin-top:8px}
 .phase-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:clamp(16px,4vw,24px);margin-bottom:18px;animation:fadeIn 0.4s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .phase-card .phase-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
@@ -77,7 +75,6 @@ header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.
 .result-box pre::-webkit-scrollbar-track{background:transparent}
 .result-box pre::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
 
-/* MOBILE OPTIMIZATION */
 @media(max-width:640px){
   .field-group input{font-size:16px;padding:12px}
   .btn{padding:16px;font-size:1rem}
@@ -87,7 +84,6 @@ header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.
 </head>
 <body>
 
-<!-- LOADING SCREEN -->
 <div id="loadingScreen">
   <div id="particlesContainer"></div>
   <div id="loadingLogo">AI HUB</div>
@@ -95,7 +91,6 @@ header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.
   <div id="loadingText"></div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <header>
     <h1>AI HUB — PRD Generator</h1>
@@ -183,27 +178,73 @@ header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.
   let phasesData = [];
   let isGenerating = false;
 
+  // ========== HELPERS ==========
+  function showLoading(show){
+    loadingDots.style.display = show ? 'flex' : 'none';
+  }
+
+  function showError(msg){
+    errorText.textContent = msg;
+    errorText.style.display = 'block';
+    errorText.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function hideError(){
+    errorText.style.display = 'none';
+    errorText.textContent = '';
+  }
+
+  async function safeFetch(url, body){
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    // Cek content-type
+    const contentType = res.headers.get('content-type') || '';
+    
+    if(!contentType.includes('application/json')){
+      const text = await res.text();
+      console.error('Non-JSON response:', text.substring(0, 200));
+      throw new Error('Server mengembalikan respons tidak valid. Kemungkinan timeout AI.');
+    }
+
+    let data;
+    try{
+      data = await res.json();
+    }catch(jsonErr){
+      const text = await res.text();
+      console.error('JSON parse error:', text.substring(0, 200));
+      throw new Error('Gagal membaca respons server. Coba lagi.');
+    }
+
+    if(data.error){
+      throw new Error(data.error);
+    }
+
+    if(data.success === false){
+      throw new Error(data.error || 'Gagal memproses.');
+    }
+
+    return data;
+  }
+
   // ========== EVENT LISTENERS ==========
   ideaInput.addEventListener('input', () => {
     btnBreakdown.disabled = ideaInput.value.trim().length < 10;
   });
 
-  ideaInput.addEventListener('keydown', (e) => {
-    if(e.key === 'Enter' && e.ctrlKey && !btnBreakdown.disabled){
-      e.preventDefault();
-      handleBreakdown();
-    }
-  });
-
   btnBreakdown.addEventListener('click', handleBreakdown);
   btnGenerate.addEventListener('click', handleGenerate);
 
-  // ========== BREAKDOWN HANDLER ==========
+  // ========== BREAKDOWN ==========
   async function handleBreakdown(){
     if(isGenerating) return;
+    
     const idea = ideaInput.value.trim();
     if(idea.length < 10){
-      showError('Ide harus minimal 10 karakter ya.');
+      showError('❌ Ide harus minimal 10 karakter ya.');
       return;
     }
 
@@ -217,17 +258,7 @@ header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.
     resultBox.style.display = 'none';
 
     try{
-      const res = await fetch('/api/break-phases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea })
-      });
-
-      const data = await res.json();
-
-      if(!res.ok){
-        throw new Error(data.error || 'Gagal memecah fase. Coba lagi.');
-      }
+      const data = await safeFetch('/api/break-phases', { idea });
 
       if(!data.phases || data.phases.length === 0){
         throw new Error('AI tidak menghasilkan fase. Coba dengan ide yang lebih spesifik.');
@@ -256,11 +287,11 @@ header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.
       phaseDiv.className = 'phase-card';
 
       let subfeaturesHTML = '';
-      phase.subfeatures.forEach((sub, si) => {
+      (phase.subfeatures || []).forEach((sub, si) => {
         subfeaturesHTML += `
           <div class="subfeature-block">
             <h4>${si + 1}. ${sub.name}</h4>
-            ${sub.fields.map((field, fi) => `
+            ${(sub.fields || []).map((field, fi) => `
               <div class="field-group">
                 <label>${field}</label>
                 <input type="text" 
@@ -288,26 +319,21 @@ header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.
     });
   }
 
-  // ========== GENERATE HANDLER ==========
+  // ========== GENERATE ==========
   async function handleGenerate(){
     if(isGenerating) return;
 
-    // Kumpulkan semua input
     const inputs = document.querySelectorAll('#phaseContainer input');
     const projectData = {
       idea: ideaInput.value.trim(),
       phases: []
     };
 
-    let isEmpty = false;
-
     inputs.forEach(input => {
       const pi = parseInt(input.dataset.phase);
       const si = parseInt(input.dataset.sub);
       const fi = parseInt(input.dataset.field);
       const value = input.value.trim();
-
-      if(!value) isEmpty = true;
 
       if(!projectData.phases[pi]){
         projectData.phases[pi] = { name: phasesData[pi].name, subfeatures: [] };
@@ -329,16 +355,10 @@ header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.
     resultBox.style.display = 'none';
 
     try{
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectData })
-      });
+      const data = await safeFetch('/api/generate', { projectData });
 
-      const data = await res.json();
-
-      if(!res.ok){
-        throw new Error(data.error || 'Gagal generate prompt.');
+      if(!data.prompt){
+        throw new Error('AI tidak menghasilkan prompt.');
       }
 
       promptOutput.textContent = data.prompt;
@@ -354,22 +374,7 @@ header p{color:var(--muted);font-size:clamp(0.9rem,2.5vw,1.05rem);line-height:1.
     }
   }
 
-  // ========== UTILITY ==========
-  function showLoading(show){
-    loadingDots.style.display = show ? 'flex' : 'none';
-  }
-
-  function showError(msg){
-    errorText.textContent = msg;
-    errorText.style.display = 'block';
-    errorText.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  function hideError(){
-    errorText.style.display = 'none';
-    errorText.textContent = '';
-  }
-
+  // ========== COPY ==========
   window.copyPrompt = function(){
     const text = promptOutput.textContent;
     if(!text) return;
