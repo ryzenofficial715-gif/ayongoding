@@ -2,13 +2,5 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "functions": {
-    "api/break-phases.mjs": {
-      "maxDuration": 60
-    },
-    "api/generate.mjs": {
-      "maxDuration": 60
-    }
-  }
+  ]
 }
