@@ -1,4 +1,4 @@
-import { chatWithGroq, cleanJSON } from './utils/groqClient.mjs';
+import { chatWithGroq, cleanJSON } from './utils/groqClient.js';
 
 const SYSTEM_PROMPT = `Kamu adalah AI Product Manager expert dengan pengalaman 15 tahun di perusahaan teknologi besar.
 
