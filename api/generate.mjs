@@ -1,78 +1,103 @@
-import { MimoAI } from './utils/mimoClient.mjs';
+import { chatWithGroq } from './utils/groqClient.mjs';
 
-const SYSTEM_PROMPT = `Kamu adalah AI Product Manager expert. Pecah ide berikut jadi PRD lengkap dalam bahasa Indonesia.
+const SYSTEM_PROMPT = `Kamu adalah AI Prompt Engineer senior yang ahli membuat prompt coding professional.
 
-Format output wajib:
-# PRD: [Nama Produk]
+Tugas kamu: membuat prompt yang SANGAT lengkap dan profesional berdasarkan data project yang diberikan.
 
-## 1. Ringkasan Produk
-[Jelaskan dalam 3-4 kalimat]
+Prompt yang kamu buat HARUS:
+1. Bisa dipakai di AI coding manapun (DeepSeek, Claude, Cursor, Bolt, v0, Codex)
+2. Menghasilkan kode yang bagus, rapi, profesional, dan maksimal
+3. Menggunakan Bahasa Indonesia yang jelas
+4. Spesifik dan actionable — tidak ada kata-kata ambigu
 
-## 2. Target Pengguna
-| Persona | Pain Points | Kebutuhan Utama |
-|---------|-------------|-----------------|
+STRUKTUR PROMPT WAJIB:
+## ROLE
+Kasih AI role yang jelas dan spesifik
 
-## 3. Fitur Utama
-| Prioritas | Fitur | Deskripsi | Estimasi |
-|-----------|-------|-----------|----------|
+## PROJECT OVERVIEW
+Deskripsi project lengkap 2-3 paragraf
 
-## 4. User Flow
-1. langkah 1
-2. langkah 2
-...
+## TECH STACK
+Stack yang harus dipakai (frontend, backend, database, library)
 
-## 5. Arsitektur Teknis
-- Frontend:
-- Backend:
-- Database:
-- Infrastruktur:
+## FEATURES
+Semua fitur detail dengan prioritas P0-P3
 
-## 6. Task Breakdown
-| # | Task | Prioritas | Estimasi |
-|---|------|-----------|----------|
+## USER FLOW
+Alur penggunaan step by step
 
-## 7. Monetisasi (opsional)
+## UI/UX REQUIREMENTS
+Warna, typography, animasi, responsive design
 
-## 8. Risiko & Mitigasi
-| Risiko | Dampak | Mitigasi |
-|--------|--------|----------|`;
+## DATABASE SCHEMA
+Jika relevan — tabel, relasi, field
+
+## API ENDPOINTS
+Jika relevan — method, path, parameter, response
+
+## TASK BREAKDOWN
+Urutan pengerjaan dari awal sampai deploy
+
+## OUTPUT FORMAT
+Apa yang harus dihasilkan AI (full code, file structure, dsb)
+
+## INSTRUKSI KHUSUS
+- Jangan setengah-setengah
+- Buat semua file sekaligus
+- Kode harus production-ready
+- Berikan penjelasan singkat di setiap file
+- Gunakan best practice terbaru`;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   if (req.method !== 'POST') {
-    res.write(`data: ${JSON.stringify({ error: 'Method not allowed' })}\n\n`);
-    res.write('data: [DONE]\n\n');
-    return res.end();
+    return res.status(405).json({ error: 'Method not allowed' });
   }
-
-  const { idea } = req.body;
-  if (!idea) {
-    res.write(`data: ${JSON.stringify({ error: 'Ide tidak boleh kosong' })}\n\n`);
-    res.write('data: [DONE]\n\n');
-    return res.end();
-  }
-
-  const prompt = `${SYSTEM_PROMPT}\n\nIDE DARI USER:\n${idea}`;
-  const client = new MimoAI();
 
   try {
-    await client.sendMessage({
-      prompt,
-      model: 'deepseek/deepseek-v4-pro',
-      messages: [],
-      onStream: (chunk) => {
-        res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+    const { projectData } = req.body;
+
+    if (!projectData || !projectData.idea) {
+      return res.status(400).json({ error: 'Data project tidak lengkap.' });
+    }
+
+    // Cek kalau semua field udah keisi
+    let emptyFields = 0;
+    for (const phase of projectData.phases || []) {
+      for (const sub of phase.subfeatures || []) {
+        for (const field of sub.fields || []) {
+          if (!field.value || field.value.trim() === '') {
+            emptyFields++;
+          }
+        }
       }
+    }
+
+    const promptForAI = `Buatkan prompt coding professional berdasarkan data project berikut:
+
+IDE AWAL: ${projectData.idea}
+
+DATA LENGKAP:
+${JSON.stringify(projectData.phases, null, 2)}
+
+Catatan: ${emptyFields > 0 ? `Ada ${emptyFields} field yang kosong — gunakan asumsi yang masuk akal.` : 'Semua field sudah terisi.'}`;
+
+    const result = await chatWithGroq(promptForAI, SYSTEM_PROMPT, 6000);
+
+    res.status(200).json({ 
+      success: true, 
+      prompt: result,
+      emptyFieldsCount: emptyFields
     });
-    res.write('data: [DONE]\n\n');
-    res.end();
   } catch (err) {
-    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-    res.write('data: [DONE]\n\n');
-    res.end();
+    console.error('[generate Error]:', err.message);
+    res.status(500).json({ error: err.message || 'Gagal generate prompt. Coba lagi.' });
   }
 }
