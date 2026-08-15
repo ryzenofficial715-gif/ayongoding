@@ -65,14 +65,20 @@ export default async function handler(req, res) {
     const { projectData } = req.body;
 
     if (!projectData || !projectData.idea) {
-      return res.status(400).json({ error: 'Data project tidak lengkap.' });
+      return res.status(200).json({ 
+        success: false, 
+        error: 'Data project tidak lengkap.' 
+      });
     }
 
-    // Cek kalau semua field udah keisi
+    // Hitung field kosong
     let emptyFields = 0;
+    let totalFields = 0;
+    
     for (const phase of projectData.phases || []) {
       for (const sub of phase.subfeatures || []) {
         for (const field of sub.fields || []) {
+          totalFields++;
           if (!field.value || field.value.trim() === '') {
             emptyFields++;
           }
@@ -87,17 +93,21 @@ IDE AWAL: ${projectData.idea}
 DATA LENGKAP:
 ${JSON.stringify(projectData.phases, null, 2)}
 
-Catatan: ${emptyFields > 0 ? `Ada ${emptyFields} field yang kosong — gunakan asumsi yang masuk akal.` : 'Semua field sudah terisi.'}`;
+Catatan: ${emptyFields > 0 ? `Ada ${emptyFields} dari ${totalFields} field yang kosong — gunakan asumsi yang masuk akal untuk field kosong.` : 'Semua field sudah terisi.'}`;
 
     const result = await chatWithGroq(promptForAI, SYSTEM_PROMPT, 6000);
 
     res.status(200).json({ 
       success: true, 
       prompt: result,
-      emptyFieldsCount: emptyFields
+      emptyFieldsCount: emptyFields,
+      totalFieldsCount: totalFields
     });
   } catch (err) {
     console.error('[generate Error]:', err.message);
-    res.status(500).json({ error: err.message || 'Gagal generate prompt. Coba lagi.' });
+    res.status(200).json({ 
+      success: false, 
+      error: err.message || 'Gagal generate prompt. Coba lagi.' 
+    });
   }
 }
